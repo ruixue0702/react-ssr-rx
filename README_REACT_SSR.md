@@ -26,3 +26,27 @@ react-dom 提供了 server 的渲染 api renderToString，负责把 react 组件
 
 - 针对服务端渲染代码，可以剔除 node_modules，从而大幅减少服务端代码生成耗时
 - 使用 babel-loader，在 node 层面解析 jsx
+
+#### concurrently 提升开发体验 合并执行命令
+```
+"start": "concurrently \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:start\""
+```
+#### 使用 StaticRouter 支持多页面 ssr
+```js
+// App.js
+import { Route } from 'react-router-dom'
+<Route path="/" exact component={Index}></Route>
+```
+```js
+// client index.js
+import { BrowserRouter } from 'react-router-dom'
+const Page = <BrowserRouter>{App}</BrowserRouter>
+ReactDom.hydrate(Page, document.getElementById('root'))
+```
+```js
+// server index.js
+import { StaticRouter } from 'react-router-dom'
+const content = renderToString(
+    <StaticRouter location={req.url}>{App}</StaticRouter>
+)
+```

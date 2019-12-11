@@ -3,6 +3,8 @@
 #### npm run dev:start
 #### npm run dev:client
 
+#### npm start 代替以上三条命令
+
 #### 把 react 组件 jsx 解析成 html
 react-dom/server 中的 api renderToString 把 react 组件解析成 html
 ```
