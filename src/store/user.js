@@ -2,37 +2,34 @@
 // import axios from 'axios'
 import { http } from "../utils/axios";
 // actionType
-const GET_LIST = 'INDEX/GET_LIST'
+const USER_INFO = 'INDEX/USER_INFO'
 // actionCreator
-const changeList = data => ({
-    type: GET_LIST,
+const changeUserInfo = data => ({
+    type: USER_INFO,
     data
 })
-export const getIndexList = server => {
+export const getUserInfo = server => {
     return (dispatch, getState, axiosInstance) => {
-        return http.get('/api/course/list')
+        return http.get('/api/user/info')
             .then(res => {
                 const { data } = res.data
-                console.log('list信息', data)
-                dispatch(changeList(data))
+                dispatch(changeUserInfo(data))
             })
-            .catch(err=>console.log('getIndexList err',err))
+            .catch(err=>console.log('getUserInfo err',err))
     }
 }
 const defaultState = {
-    list: []
+    userinfo: {}
 }
 export default (state = defaultState, action) => {
     switch(action.type) {
-        case GET_LIST:
+        case USER_INFO:
             const newState = {
                 ...state,
-                list: action.data
+                userinfo: action.data
             }
-            console.log('newList',newState)
             return newState
         default:
-            console.log('List',state)
             return state
     }
 }

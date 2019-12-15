@@ -11,7 +11,6 @@
 - 新用户不爱用
 - 老用户易流失
 
-
 **从用户在浏览器里输入 url 后，直到页面完全显示出来到底发生了什么？**
 
 **ssr 缺点**：对服务器会有额外的性能的损耗，用户量过大时可临时放弃ssr，切换入口
@@ -50,3 +49,87 @@ const content = renderToString(
     <StaticRouter location={req.url}>{App}</StaticRouter>
 )
 ```
+
+#### 异步数据获取 client 层 Vs server 层
+client层实现数据获取：`Component -> didMount (ajax data) -> client store -> props -> 渲染`
+
+server层实现数据获取：`Component.loadData (redux store.dispatch) -> node server(get data) -> server store -> window.__context=${JSON.stringify(store.getState())} -> props -> 渲染`
+
+```js
+container Index.js
+Index.loadData = (store) => {
+    return store.dispatch(getIndexList())
+}
+export default connect(
+    state => ({ list: state.index.list }),
+    { getIndexList }
+)(Index)
+```
+
+```js
+// client index.js
+import React from 'react'
+import ReactDom from 'react-dom'
+import { BrowserRouter, Route } from 'react-router-dom'
+import { Provider } from 'react-redux'
+import routes from '../src/App'
+import { getClientStore } from '../src/store/store'
+// 注水 客户端入口 client-entry => client bundle
+const Page = (
+    <Provider store={getClientStore()}>
+        <BrowserRouter>
+            {routes.map(route => <Route {...route}></Route>)}
+        </BrowserRouter>
+    </Provider>
+)
+ReactDom.hydrate(Page, document.getElementById('root'))
+```
+#### 客户端获取context数据渲染
+- 通过 redux 的 createStore, applyMiddleware, combineReducers 将 server 端 store 转成 client 端的 store
+- 再通过 redux 的 Provider 将 store 传到组件中
+- 在组件中通过 props 进行渲染
+
+#### 前后端统一数据请求
+前端封装请求到 node server（9093端口），再通过 node server 统一代理到 mock server （9090）
+```js
+// utils axios.js
+axios.create({
+    timeout: 5000,
+    // 前缀
+    // baseURL: 'http://localhost:9090'
+    baseURL: 'http://localhost:9093'
+})
+```
+
+```js
+// server index.js
+import proxy from 'http-proxy-middleware'
+const mockPath = "http://localhost:9090";
+const option = {
+     target: mockPath,
+     changeOrigin: true,
+     ws: true
+};
+app.get('/api/*', proxy(option))
+```
+
+#### 页面多个数据获取报错处理
+- 接口错误时，降级渲染
+
+```js
+// 接口报错降级处理
+const content = renderToString(
+    <Provider store={store}>
+        <StaticRouter location={req.url}>
+            {/* 接口报错降级处理 */}
+            {Header ? <Header/> : ''}
+            {routes.map(route => {{route ? <Route {...route}></Route> : ''}})}
+        </StaticRouter>
+    </Provider>
+)
+```
+
+
+### 遗留问题
+#### Warning: Expected server HTML to contain a matching <div>
+注：client 和 server 的 staticRouter 内的 代码不同就会出现这个报错
