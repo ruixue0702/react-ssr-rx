@@ -114,10 +114,12 @@ app.get('/api/*', proxy(option))
 ```
 
 #### 页面多个数据获取报错处理
-- 接口错误时，降级渲染
+- 接口错误时，降级渲染 
+- 在 server StaticRouter 层级进行降级处理，但需要在 promise.all().catch() 再次返回模板
+- 在 promise 层级进行降级处理，需要在 promises.all() 中进行 promise 的 map 循环，对每一个 promise 做 catch 的错误处理
 
 ```js
-// 接口报错降级处理
+// 接口报错降级处理1 需在promise.all().catch(()=>res.send(``))再次send模板 （该方法较冗余）
 const content = renderToString(
     <Provider store={store}>
         <StaticRouter location={req.url}>
@@ -127,9 +129,22 @@ const content = renderToString(
         </StaticRouter>
     </Provider>
 )
+
+```
+```js
+// 在 promise 层级进行降级处理 需要在 promises.all() 中进行 promise 的 map 循环，对每一个 promise 做 catch 的错误处理 
+const promiseCatch = (promise) => {
+    promise.catch( err => {
+        console.log('promise.catch err', err)
+    })
+}
+Promise.all(promises.map(promise => {
+    return promiseCatch(promise)
+}))
 ```
 
 
 ### 遗留问题
-#### Warning: Expected server HTML to contain a matching <div>
+#### Warning: Expected server HTML to contain a matching <div> 
 注：client 和 server 的 staticRouter 内的 代码不同就会出现这个报错
+- 在 promise 层级做容错处理，client BrowserRouter 和 server staticRouter 中的 代码是相同的，就不会出现这样的问题了

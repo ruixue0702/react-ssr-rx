@@ -46,7 +46,6 @@ app.get('*', (req, res) => {
     // 如果匹配 就要把route.loadData的数据返回
     routes.some(route => {
         const match = matchPath(req.path, route)
-        console.log(req.path, route.path, !match)
         if (match) {
             const { loadData } = route.component
             if (loadData) {
@@ -54,36 +53,53 @@ app.get('*', (req, res) => {
             }
         }
     })
+    // 接口报错降级处理
+    // promise 接口容错处理 
+    // Promise.all(promises.map(promise => {return promiseCatch(promise)}))
+    const promiseCatch = (promise) => {
+        promise.catch( err => {
+            console.log('promise.catch err', err)
+        })
+    }
     // 等待所有网络请求结束再渲染
     // 这里的app 已经不是组件了，而是一个函数
-    Promise.all(promises).then((v) => {
+    Promise.all(promises.map(promise => {
+        return promiseCatch(promise)
+    })).then((v) => {
         // 渲染逻辑放到promise.all内执行
         const content = renderToString(
             <Provider store={store}>
                 <StaticRouter location={req.url}>
-                    {/* 接口报错降级处理 */}
-                    {Header ? <Header/> : ''}
-                    {routes.map(route => {{route ? <Route {...route}></Route> : ''}})}
-                    
-                    {/* 测试解决这个警告 Warning: Expected server HTML to contain a matching <div> in <div>. */}
-                    {/* {routes.map(route => {{return route ? <Route {...route}></Route> : ''}})} */}
-                    {/* {routes.map(route => {
-                        if (route) {
-                            return <Route {...route}></Route>
-                        } else {
-                            return ''
-                        }
-                    })} */}
+                    <Header/>
+                    {routes.map(route => <Route {...route}></Route>)}
                 </StaticRouter>
             </Provider>
         )
+        // const content = renderToString(
+        //     <Provider store={store}>
+        //         <StaticRouter location={req.url}>
+        //             {/* {Header ? <Header/> : ''}
+        //             {routes.map(route => {{route ? <Route {...route}></Route> : ''}})} */}
+                    
+        //             {/* 测试解决这个警告 Warning: Expected server HTML to contain a matching <div> in <div>. */}
+        //             {/* {routes.map(route => {{return route ? <Route {...route}></Route> : ''}})} */}
+        //             {/* {routes.map(route => {
+        //                 if (route) {
+        //                     return <Route {...route}></Route>
+        //                 } else {
+        //                     return ''
+        //                 }
+        //             })} */}
+        //         </StaticRouter>
+        //     </Provider>
+        // )
         // 字符串模板
         res.send(`
             <!DOCTYPE html>
             <html lang="en">
                 <head>
                     <meta charset="utf-8">
-                    <title>REACT SSR</title>
+                    <title>REACT SSR1</title>
                 </head>
                 <body>
                     <div id="root">${content}</div>
@@ -95,23 +111,24 @@ app.get('*', (req, res) => {
             </html>
         `)
     })
-    .catch((err, v) => {
-        res.send(`
-            <!DOCTYPE html>
-            <html lang="en">
-                <head>
-                    <meta charset="utf-8">
-                    <title>REACT SSR</title>
-                </head>
-                <body>
-                    <div id="root">${content}</div>
-                    <script>
-                        window.__context=${JSON.stringify(store.getState())}
-                    </script>
-                    <script src="/bundle.js"></script>
-                </body>
-            </html>
-        `)
+    .catch(() => {
+        res.send(`500 Internal Server Error`)
+        // res.send(`
+        //     <!DOCTYPE html>
+        //     <html lang="en">
+        //         <head>
+        //             <meta charset="utf-8">
+        //             <title>REACT SSR</title>
+        //         </head>
+        //         <body>
+        //             <div id="root">${content}</div>
+        //             <script>
+        //                 window.__context=${JSON.stringify(store.getState())}
+        //             </script>
+        //             <script src="/bundle.js"></script>
+        //         </body>
+        //     </html>
+        // `)
     })
 
     // routes.some(route => {
