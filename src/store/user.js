@@ -9,8 +9,9 @@ const changeUserInfo = data => ({
     data
 })
 export const getUserInfo = server => {
-    return (dispatch, getState, axiosInstance) => {
-        return http.get('/api/user/info')
+    return (dispatch, getState, $axios) => {
+        // return http.get('/api/user/info')
+        return $axios.get('/api/user/info')
             .then(res => {
                 const { data } = res.data
                 dispatch(changeUserInfo(data))

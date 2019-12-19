@@ -148,3 +148,107 @@ Promise.all(promises.map(promise => {
 #### Warning: Expected server HTML to contain a matching <div> 
 注：client 和 server 的 staticRouter 内的 代码不同就会出现这个报错
 - 在 promise 层级做容错处理，client BrowserRouter 和 server staticRouter 中的 代码是相同的，就不会出现这样的问题了
+
+
+
+**=============x========> (跨域)**
+
+**浏览器 ==> ssrnode ==> 数据接口(mock java php)**
+
+### **Promise**
+```js
+// Promise.allSettled(promises)  Promise.allSettled 新的API  node babel 环境中才可使用
+// https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled
+```
+
+```js
+// 包装后
+// 规避报错 可以考虑加日志
+const promise = new Promise((resolve, reject) => {
+    loadData(store).then(resolve).catch((err) => {
+        console.log(`${req.path} err`)
+        resolve
+    })
+})
+promises.push(promise)
+
+Promise.all(promises)
+```
+#### **axios**
+```js
+// server index.js
+import proxy from 'http-proxy-middleware'
+app.use(
+    '/api',
+    proxy({ target: 'http://localhost:9090', changeOrigin: true })
+)
+
+```
+```js
+// store store.js
+const serverAxios = axios.create({
+    baseURL: 'http://localhost:9090/'
+})
+const clientAxios = axios.create({
+    baseURL: '/'
+})
+// 服务端用的
+// 通过 server 的 dispatch 来获取和充实
+// thunk.withExtraArgument() 同 thunk  但可传参数（axios）
+// 
+export const getServerStore = () => {
+    return createStore(reducer, applyMiddleware(thunk.withExtraArgument(serverAxios)))
+}
+export const getClientStore = () => {
+    const defaultState = window.__context ? window.__context : {}
+    return createStore(reducer, defaultState, applyMiddleware(thunk.withExtraArgument(clientAxios)))
+}
+```
+```js
+// store index.js
+// $axios thunk.withExtraArgument(clientAxios) thunk.withExtraArgument(serverAxios)
+export const getIndexList = server => {
+    return (dispatch, getState, $axios) => {
+        // return http.get('/api/course/list')
+        return $axios.get('/api/course/list')
+            .then(res => {
+                const { data } = res.data
+                console.log('list信息', data)
+                dispatch(changeList(data))
+            })
+            .catch(err=>console.log('getIndexList err',err))
+    }
+}
+```
+### **favoicon**
+pulic 文件加下
+
+### **Notfound**
+```js
+// App.js
+{
+    component: Notfound,
+    key: "Notfound"
+}
+```
+### **css**
+`npm install isomorphic-style-loader css-loader style-loader --D`
+```js
+// App.js
+import './App.css'
+```
+```js
+// webpack.client.js
+{
+    test: /\.css$/,
+    use: ['style-loader', 'css-loader']
+}
+```
+```js
+// webpack.server.js
+{
+    test: /\.css$/,
+    // 服务端同构 style isomorphic-style-loader
+    use: ['isomorphic-style-loader', 'css-loader']
+}
+```

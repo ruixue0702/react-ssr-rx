@@ -25,6 +25,11 @@ module.exports = {
                 options: {
                     presets: ['@babel/preset-react', ['@babel/preset-env']]
                 }
+            },
+            {
+                test: /\.css$/,
+                // 服务端同构 style isomorphic-style-loader
+                use: ['isomorphic-style-loader', 'css-loader']
             }
         ]
     }

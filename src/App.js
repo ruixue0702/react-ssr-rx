@@ -3,7 +3,9 @@ import { Route } from 'react-router-dom'
 import Index from './container/Index'
 import About from './container/About'
 import User from './container/User'
-
+import Notfound from './container/Notfound'
+// 
+import './App.css'
 // 组件的配置
 // export default (
 //     <div>
@@ -20,8 +22,12 @@ export default [
         // 也可以在这里直接设置 loadData
         // loadData: Index.loadData,
         // 是否精确匹配path
-        // exact: true,
+        exact: true,
         key: "index"
+        // 嵌套路由
+        // routes: [{
+
+        // }]
     },
     {
         path: "/about",
@@ -35,4 +41,8 @@ export default [
         exact: true,
         key: "user"
     },
+    {
+        component: Notfound,
+        key: "Notfound"
+    }
 ]
