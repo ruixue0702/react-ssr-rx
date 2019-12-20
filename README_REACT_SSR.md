@@ -252,3 +252,82 @@ import './App.css'
     use: ['isomorphic-style-loader', 'css-loader']
 }
 ```
+
+
+### **局部样式**
+#### Modules CSS模块
+```js
+// webpack.client.js
+loader: "style-loader!css-loader?modules"
+```
+```js
+// webpack.server.js
+loader: "isomorphic-style-loader!css-loader?modules"
+```
+```css
+// About.css
+.title {
+    color: green;
+}
+```
+```js
+// About.js
+import style from './About.css'
+<h1 className={style.title}>关于页面</h1>
+```
+#### 行内样式
+```js
+// webpack.client.js
+use: ['style-loader', 'css-loader']"
+```
+```js
+// webpack.server.js
+use: ['isomorphic-style-loader', 'css-loader']"
+```
+```js
+// 直接写入
+<h1 style={{padding: "10px 20px",textAlign: "center",color: "blue",fontSize: "55px"}}>Header</h1>
+```
+```js
+// 多组件共享style对象 写入单独 js 文件 AboutStyle.js
+const Header = {
+    padding: "10px 20px",
+    textAlign: "center",
+    color: "blue",
+    fontSize: "22px"
+}
+const styles = {
+    Header: Header,
+}
+export default styles
+// About.js
+import styles from './AboutStyle.js'
+<h1 style={styles.Header}>Header</h1>
+```
+#### 使用Styled components 
+创建带有样式的组件
+npm install --save styled-components
+```js
+import styled from 'styled-components'
+// 创建了一个具有样式的组件
+const TodoComponent = styled.div`
+    background-color: #44014C;
+    width: 300px;
+    min-height: 200px;
+    margin: 30px auto;
+    box-sizing: border-box;
+`;
+```
+```js
+// ToDoApp.js
+class ToDoApp extends React.Component {
+  // ...
+  render() {
+    return (
+      <TodoComponent>
+        <h2>ToDo</h2>
+      </TodoComponent>
+    )
+  }
+}
+```

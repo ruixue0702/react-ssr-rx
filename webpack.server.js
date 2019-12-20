@@ -29,7 +29,9 @@ module.exports = {
             {
                 test: /\.css$/,
                 // 服务端同构 style isomorphic-style-loader
-                use: ['isomorphic-style-loader', 'css-loader']
+                // use: ['isomorphic-style-loader', 'css-loader'],
+                // css模块化
+                loader: "isomorphic-style-loader!css-loader?modules"
             }
         ]
     }
