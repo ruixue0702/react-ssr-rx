@@ -30,10 +30,10 @@ export default (state = defaultState, action) => {
                 ...state,
                 list: action.data
             }
-            console.log('newList',newState)
+            // console.log('newList',newState)
             return newState
         default:
-            console.log('List',state)
+            // console.log('List',state)
             return state
     }
 }

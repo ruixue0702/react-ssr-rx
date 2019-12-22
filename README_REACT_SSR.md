@@ -255,7 +255,8 @@ import './App.css'
 
 
 ### **局部样式**
-#### Modules CSS模块
+https://www.jianshu.com/p/850031db7ac5
+#### Modules CSS模块化
 ```js
 // webpack.client.js
 loader: "style-loader!css-loader?modules"
@@ -331,3 +332,198 @@ class ToDoApp extends React.Component {
   }
 }
 ```
+
+
+### **服务层面性能优化**
+高并发 —— 负载均衡
+       —— 暂时放弃 SEO 优化
+
+#### 放弃seo的降级渲染实现优化
+webpack 开启 CSR - Nginx
+                 - Node
+
+#### 降级渲染 —— 生成完整 CSR 应用
+```js
+// webpack.client.js
+// npm install html-webpack-plugin --D
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+module.exports = {
+    // ...
+    plugins: [
+        new HtmlWebpackPlugin({
+            filename: 'index.csr.html',
+            template: 'src/index.csr.html',
+            inject: true
+        })
+    ]
+    // ...
+}
+```
+```html
+<!-- src index.csr.html -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>REACT SSR1</title>
+    </head>
+    <body>
+        <!-- 客户端渲染模板 -->
+        <div id="root"></div>
+    </body>
+</html>
+```
+```js
+// client index.js
+if (window.__context) {
+    // 服务端渲染 hydrate
+    ReactDom.hydrate(Page, document.getElementById('root'))
+} else {
+    // 客户端渲染 csr降级渲染 render
+    ReactDom.render(Page, document.getElementById('root'))
+}
+```
+```js
+// server index.js
+// csr 渲染
+import path from 'path'
+import fs from 'fs' // 文件系统
+// ...
+function csrRender(res) {
+    // 读取 csr 文件 返回
+    const filename = path.resolve(process.cwd(), 'public/index.csr.html')
+    const html = fs.readFileSync(filename, 'utf-8')
+    return res.send(html)
+}
+app.get('*', (req, res) => {
+    // console.log('req.query._mode', req.query._mode)
+    if (req.query._mode=='csr') {
+        console.log('参数开启 csr 降级')
+        // 开启 csr
+        return csrRender(res)
+    }
+    // 配置开关开启 csr
+
+    // 服务器负载过高 开启 csr
+    // ...
+}
+
+```
+
+
+
+
+### **css 优化细节**
+```css
+// container Index.css
+.list { 
+    background: pink;
+    padding: 10px 15px;
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    box-shadow: 0 0 8px 0  #eee;
+}
+```
+```js
+// container Index.js
+import styles from './Index.css'
+// server 端特有 styles._getCss()
+// console.log('Index.js styles._getCss()', classNames._getCss())
+function Index(props) {
+    if (props.staticContext) {
+        props.staticContext.css.push(classNames._getCss())
+    }
+    // ...
+    return (<div>
+            <ul>{props.list.map(item => {return <li key={item.id} className= {classNames.list}>{item.name}</li>})}</ul>
+        </div>)
+}
+```
+```js
+// webpack.server.js
+module.exports = {
+    // ...
+    module: {
+        rules: [
+            // ...
+            {
+                test: /\.css$/,
+                use: ['isomorphic-style-loader', {
+                    loader: 'css-loader',
+                    options: {
+                        modules: true
+                    }
+                }]
+            }
+        ]
+    }
+}
+```
+```js
+// webpack.client.js
+module.exports = {
+    // ...
+    module: {
+        rules: [
+            // ...
+            {
+                test: /\.css$/,
+                use: ['style-loader', {
+                    loader: 'css-loader',
+                    options: {
+                        modules: true
+                    }
+                }]
+            }
+        ]
+    }
+}
+```
+```js
+// server index.js
+Promise.all(promises).then(() => {
+    const context = {
+        css: []
+    }
+    // ...
+    const css = context.css.join('\n')
+    res.send(`
+        // ...
+                <style>
+                    ${css}
+                </style>
+            </head>
+        // ...
+    `)
+}
+```
+
+### **高阶组件优化 css**
+```js
+// withStyle.js
+import React from 'react'
+function withStyle(Comp, styles) {
+    return function(props) {
+        if (props.staticContext) {
+            props.staticContext.css.push(styles._getCss())
+        }
+        return <Comp {...props} />
+    }
+}
+export default withStyle
+```
+```js
+// container Index.js
+import withStyle from '../withStyle'
+export default connect(
+    state => ({ list: state.index.list }),
+    { getIndexList }
+)(withStyle(Index, classNames))
+```
+### **遗留问题**
+1. 通过高阶组件进行 css 优化，首屏数据不是服务端渲染的
+2. css 优化，在服务端渲染 css，会在 head 中生成两段相同的 style 代码片段
+3. 不在服务端渲染 css，也可以在页面中显示 css module
+4. 为什么一定要在服务端进行 css 渲染呢？

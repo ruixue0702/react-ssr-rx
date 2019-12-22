@@ -27,4 +27,11 @@ const Page = (
 //         </BrowserRouter>
 //     </Provider>
 // )
-ReactDom.hydrate(Page, document.getElementById('root'))
+
+if (window.__context) {
+    // 服务端渲染 hydrate
+    ReactDom.hydrate(Page, document.getElementById('root'))
+} else {
+    // 客户端渲染 csr降级渲染 render
+    ReactDom.render(Page, document.getElementById('root'))
+}

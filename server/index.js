@@ -1,10 +1,13 @@
 // 这里的 node 代码，会用 babel 处理
+import path from 'path'
+import fs from 'fs' // 文件系统
 import React from 'react'
 // react-dom/server 中的 api renderToString 把 react 组件解析成 html
 import { renderToString } from 'react-dom/server'
 // node server
 import express from 'express'
 import { StaticRouter, matchPath, Route, Switch } from 'react-router-dom'
+// Switch: 只渲染第一个匹配到的<路由组件>或<重定向组件>
 import { Provider } from 'react-redux'
 // import store from '../src/store/store'
 import { getServerStore } from '../src/store/store'
@@ -32,9 +35,31 @@ app.use(
     proxy({ target: 'http://localhost:9090', changeOrigin: true })
 )
 
+// csr 渲染
+function csrRender(res) {
+    // 读取 csr 文件 返回
+    const filename = path.resolve(process.cwd(), 'public/index.csr.html')
+    const html = fs.readFileSync(filename, 'utf-8')
+    return res.send(html)
+}
 // * 在服务端监听所有的路由，以避免404的错误
 // app.get('*') 监听所有的路由
 app.get('*', (req, res) => {
+    // console.log('req.query._mode', req.query._mode)
+    if (req.query._mode=='csr') {
+        console.log('参数开启 csr 降级')
+        // 开启 csr
+        return csrRender(res)
+    }
+    // 配置开关开启 csr
+
+    // 服务器负载过高 开启 csr
+
+
+    // 获取根据路由渲染出的组件，并且拿到 loadData 方法 获取数据
+
+
+
     // 全局 最简单的写法 面条式代码
     // if (req.url.startsWith('/api/')) {
     //     // 不渲染页面，使用 axios 转发 axios.get
@@ -87,13 +112,16 @@ app.get('*', (req, res) => {
     // Promise.allSettled(promises)  Promise.allSettled 新的API  node babel 环境中才可使用
     // https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled
     Promise.all(promises).then(() => {
+        const context = {
+            css: []
+        }
     // Promise.all(promises.map(promise => {
     //     return promiseCatch(promise)
     // })).then(() => {
         // 渲染逻辑放到promise.all内执行
         const content = renderToString(
             <Provider store={store}>
-                <StaticRouter location={req.url}>
+                <StaticRouter location={req.url} context={context}>
                     <Header/>
                     <Switch>
                         {routes.map(route => <Route {...route}></Route>)}
@@ -101,6 +129,7 @@ app.get('*', (req, res) => {
                 </StaticRouter>
             </Provider>
         )
+        const css = context.css.join('\n')
         // 字符串模板
         res.send(`
             <!DOCTYPE html>
@@ -108,6 +137,9 @@ app.get('*', (req, res) => {
                 <head>
                     <meta charset="utf-8">
                     <title>REACT SSR1</title>
+                    <style>
+                        ${css}
+                    </style>
                 </head>
                 <body>
                     <div id="root">${content}</div>

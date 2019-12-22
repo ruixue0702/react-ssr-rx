@@ -31,7 +31,13 @@ module.exports = {
                 // 服务端同构 style isomorphic-style-loader
                 // use: ['isomorphic-style-loader', 'css-loader'],
                 // css模块化
-                loader: "isomorphic-style-loader!css-loader?modules"
+                // loader: "isomorphic-style-loader!css-loader?modules"
+                use: ['isomorphic-style-loader', {
+                    loader: 'css-loader',
+                    options: {
+                        modules: true
+                    }
+                }]
             }
         ]
     }
